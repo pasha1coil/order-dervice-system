@@ -19,6 +19,7 @@ message Order {
   double total_amount = 4;
   OrderStatus status = 5;
   google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
 }
 
 message OrderItem {
@@ -59,25 +60,4 @@ enum OrderStatus {
   PAID = 2;
   CANCELLED = 3;
   FAILED = 4;
-}
-
-message OrderCreatedEvent {
-  string order_id = 1;
-  string user_id = 2;
-  double total_amount = 3;
-  google.protobuf.Timestamp created_at = 4;
-}
-
-message OrderPaidEvent {
-  string order_id = 1;
-  string user_id = 2;
-  double total_amount = 3;
-  google.protobuf.Timestamp paid_at = 4;
-}
-
-message OrderFailedEvent {
-  string order_id = 1;
-  string user_id = 2;
-  string reason = 3;
-  google.protobuf.Timestamp failed_at = 4;
 }
