@@ -12,6 +12,7 @@ require (
 	github.com/nats-io/nats.go v1.47.0
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.10.0
+	go.etcd.io/bbolt v1.3.8
 	go.mongodb.org/mongo-driver v1.14.0
 	go.uber.org/zap v1.27.1
 	google.golang.org/grpc v1.65.0

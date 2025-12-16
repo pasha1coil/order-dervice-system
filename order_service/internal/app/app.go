@@ -41,11 +41,6 @@ func Run(ctx context.Context, config initialize.Config, logger *zap.Logger) erro
 		return fmt.Errorf("failed connection to nats: %w", err)
 	}
 
-	clients := initialize.NewClients(initialize.ClientsDeps{
-		Logger: logger,
-		Conn:   natsConn,
-	})
-
 	repositories, err := initialize.NewRepositories(ctx, initialize.RepositoriesDeps{
 		MongoDB: mongoDB,
 	})
@@ -53,7 +48,19 @@ func Run(ctx context.Context, config initialize.Config, logger *zap.Logger) erro
 		return fmt.Errorf("failed initialize repositories: %w", err)
 	}
 
+	clients := initialize.NewClients(initialize.ClientsDeps{
+		Logger:     logger,
+		Conn:       natsConn,
+		BboltStore: repositories.BboltDBStore,
+	})
+
 	services := initialize.NewServices(initialize.ServicesDeps{
+		Logger:       logger,
+		Clients:      clients,
+		Repositories: repositories,
+	})
+
+	workers := initialize.NewWorkers(initialize.WorkersDeps{
 		Logger:       logger,
 		Clients:      clients,
 		Repositories: repositories,
@@ -69,6 +76,7 @@ func Run(ctx context.Context, config initialize.Config, logger *zap.Logger) erro
 	}
 
 	serverGRPC.Register(rpcControllers)
+	go workers.RepublisherWC.Start(ctx, 3*time.Second)
 
 	go func() {
 		if err := serverGRPC.Run(config.GrpcURL); err != nil {
@@ -82,6 +90,9 @@ func Run(ctx context.Context, config initialize.Config, logger *zap.Logger) erro
 		return natsConn.Drain()
 	}))
 	shutdownGroup.Add(closer.CloserFunc(mongoDB.Client().Disconnect))
+	shutdownGroup.Add(closer.CloserFunc(func(ctx context.Context) error {
+		return repositories.BboltDBStore.Close()
+	}))
 
 	<-ctx.Done()
 
