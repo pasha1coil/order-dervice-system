@@ -3,10 +3,8 @@ package order_service
 import (
 	"context"
 	"errors"
-	"order-service-system/order_service/internal/clients/nats_client"
 	"order-service-system/order_service/internal/models"
 	"order-service-system/order_service/internal/pj_errors"
-	"order-service-system/order_service/internal/repository/order_repository"
 	"order-service-system/order_service/internal/utils"
 	orderpb "order-service-system/proto/order"
 	"time"
@@ -19,14 +17,25 @@ import (
 
 type OrderService struct {
 	logger     *zap.Logger
-	orderRepo  *order_repository.OrderRepository
-	natsClient *nats_client.Client
+	orderRepo  OrderRepository
+	natsClient OrderEventsPublisher
 }
 
 type Deps struct {
 	Logger     *zap.Logger
-	OrderRepo  *order_repository.OrderRepository
-	NatsClient *nats_client.Client
+	OrderRepo  OrderRepository
+	NatsClient OrderEventsPublisher
+}
+
+// только для unit тестов нужны
+type OrderRepository interface {
+	Create(ctx context.Context, order models.Order) error
+	Get(ctx context.Context, orderID string) (models.Order, error)
+	UpdateStatus(ctx context.Context, orderID string, status string) (models.Order, error)
+}
+
+type OrderEventsPublisher interface {
+	PublishOrderCreated(event models.OrderCreatedEvent) error
 }
 
 func NewOrderService(deps Deps) *OrderService {
